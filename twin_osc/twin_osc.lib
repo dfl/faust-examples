@@ -50,24 +50,6 @@ MAX_DELAY = 4096;
 //------------------------------------------------------------------------------
 fdelay4(maxdelay, d, x) = de.fdelaylti(4, maxdelay, d, x);
 
-//------------------------`(dfl).sel3`------------------------------------------
-// Three-way selector.
-//
-// #### Usage
-//
-// ```
-// dfl.sel3(s, a, b, c) : _
-// ```
-//
-// Where:
-//
-// * `s`: selector (0, 1, or 2)
-// * `a`: output when s <= 0
-// * `b`: output when 0 < s <= 1
-// * `c`: output when s > 1
-//------------------------------------------------------------------------------
-sel3(s, a, b, c) = select2(s > 0, a, select2(s > 1, b, c));
-
 //============================= Twin Oscillator ================================
 //==============================================================================
 
@@ -104,7 +86,7 @@ with {
     morph_out = osc_out - amt * delayed;
     detune_out = osc_out + delayed;
 
-    output = sel3(m, pwm_out, morph_out, detune_out);
+    output = select3(m, pwm_out, morph_out, detune_out);
 };
 
 //------------------------`calc_delay`------------------------------------------
