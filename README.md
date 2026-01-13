@@ -3,7 +3,7 @@
 Virtual analog synthesis using a time-varying comb filter.
 
 Based on: **"Virtual Analog Synthesis with a Time-Varying Comb Filter"**
-D. Lowenfels, 2018
+D. Lowenfels, AES Convention 115, October 2003
 https://www.researchgate.net/publication/325654284
 
 ## Overview
