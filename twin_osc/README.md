@@ -1,6 +1,6 @@
 # TwinOsc
 
-Virtual analog synthesis using a time-varying comb filter.
+Twin Oscillator demonstrating classic comb filter tricks.
 
 Based on: **"Virtual Analog Synthesis with a Time-Varying Comb Filter"**
 D. Lowenfels, AES Convention 115, October 2003
