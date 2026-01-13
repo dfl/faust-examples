@@ -66,22 +66,6 @@ ratio = 1 + amount           // 1.0 to 2.0 (unison to octave)
 ramp_rate = (ratio - 1) / grain_size
 ```
 
-## Build
-
-```bash
-# JACK Qt GUI (interactive)
-faust2jaqt twin_osc.dsp
-
-# Web Audio
-faust2webaudio twin_osc.dsp
-
-# VST plugin
-faust2vst twin_osc.dsp
-
-# Standalone JACK
-faust2jack twin_osc.dsp
-```
-
 ## Files
 
 - `twin_osc.dsp` - Main Faust DSP file with GUI controls
