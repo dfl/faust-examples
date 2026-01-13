@@ -1,35 +1,50 @@
-// rpm.lib
+//############### rpm.lib ######################################################
 // RPM (Recursive Phase Modulation) Oscillator Library
 //
 // Based on Norio Tomisawa's 1981 Yamaha patent for feedback FM synthesis:
 // "Tone production method for an electronic musical instrument" (US4249447A)
-// https://patents.google.com/patent/US4249447
 //
 // Uses a "hunting filter" (2-point moving average) in the feedback path
 // to suppress Nyquist-rate limit cycle oscillations at high modulation indices.
 //
-// Usage:
-//   dfl = library("rpm.lib");
-//   process = dfl.saw(freq, beta);
-//   process = dfl.sqr(freq, beta);
+// #### Usage
+//
+// ```
+// dfl = library("rpm.lib");
+// process = dfl.saw(freq, beta);
+// ```
+//
+// #### Reference
+//
+// * <https://patents.google.com/patent/US4249447>
+//##############################################################################
 
 declare name "RPM Library";
-declare author "David Lowenfels <dfl>";
+declare author "David Lowenfels";
+declare license "MIT";
 declare version "1.0";
-declare reference "https://patents.google.com/patent/US4249447";
 
 import("stdfaust.lib");
 
-//=============================================================================
-// RPM Sawtooth
-//=============================================================================
-// Recursive phase modulation producing sawtooth-like waveform
-// As beta increases from 0 toward ~1.5, morphs from sine to sawtooth
-//
-// Parameters:
-//   freq - frequency in Hz
-//   beta - modulation depth (0 to ~1.5)
+//============================= RPM Oscillators ================================
+//==============================================================================
 
+//------------------------`(dfl).saw`-------------------------------------------
+// RPM sawtooth oscillator. Recursive phase modulation producing a
+// sawtooth-like waveform. As beta increases from 0 toward ~1.5,
+// morphs from sine to sawtooth.
+//
+// #### Usage
+//
+// ```
+// dfl.saw(freq, beta) : _
+// ```
+//
+// Where:
+//
+// * `freq`: frequency in Hz
+// * `beta`: modulation depth (0 to ~1.5)
+//------------------------------------------------------------------------------
 saw(freq, beta) = tick ~ (_,_) : _,!
 with {
     phasor = os.phasor(1, freq);
@@ -44,16 +59,22 @@ with {
     };
 };
 
-//=============================================================================
-// RPM Square
-//=============================================================================
-// Recursive phase modulation producing square-like waveform
-// Uses squared feedback for odd-harmonic-rich content (1, 3, 5, 7...)
+//------------------------`(dfl).sqr`-------------------------------------------
+// RPM square oscillator. Recursive phase modulation producing a
+// square-like waveform with odd-harmonic-rich content (1, 3, 5, 7...).
+// Uses squared feedback term.
 //
-// Parameters:
-//   freq - frequency in Hz
-//   beta - modulation depth (0 to ~1.5)
-
+// #### Usage
+//
+// ```
+// dfl.sqr(freq, beta) : _
+// ```
+//
+// Where:
+//
+// * `freq`: frequency in Hz
+// * `beta`: modulation depth (0 to ~1.5)
+//------------------------------------------------------------------------------
 sqr(freq, beta) = tick ~ (_,_) : _,!
 with {
     phasor = os.phasor(1, freq);

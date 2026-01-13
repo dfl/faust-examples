@@ -1,63 +1,99 @@
-// twin_osc.lib
+//############### twin_osc.lib #################################################
 // TwinOsc Library - Time-Varying Comb Filter Synthesis
 //
 // Based on: "Virtual Analog Synthesis with a Time-Varying Comb Filter"
 // D. Lowenfels, AES Convention 115, October 2003
-// https://www.researchgate.net/publication/325654284
 //
-// Usage:
-//   dfl = library("twin_osc.lib");
-//   process = dfl.osc(freq, amt, detune, mode);
+// A sawtooth oscillator fed through a modulated comb filter (delay line)
+// creates classic analog effects: PWM, saw-to-square morphing, and detune.
+//
+// #### Usage
+//
+// ```
+// dfl = library("twin_osc.lib");
+// process = dfl.osc(freq, amt, detune, mode);
+// ```
+//
+// #### Reference
+//
+// * <https://www.researchgate.net/publication/325654284>
+//##############################################################################
 
 declare name "TwinOsc Library";
-declare author "David Lowenfels <dfl>";
+declare author "David Lowenfels";
+declare license "MIT";
 declare version "1.0";
-declare reference "https://www.researchgate.net/publication/325654284";
 
 import("stdfaust.lib");
 
-//=============================================================================
-// Interpolated Fractional Delay
-//=============================================================================
-// 4-point Lagrange interpolation for smooth fractional delay
-
-fdelay4(maxdelay, d, x) = de.fdelaylti(4, maxdelay, d, x);
-
-//=============================================================================
-// Helpers
-//=============================================================================
-
-sel3(s, a, b, c) = select2(s > 0, a, select2(s > 1, b, c));
-
-//=============================================================================
-// Delay Calculation
-//=============================================================================
-// Converts PWM amount (0-1) to delay in samples
-// amt=0.5 gives half-period delay (square wave in PWM mode)
-
-calc_delay(f, amt, detune) = base_delay * ma.SR / f + detune
-with {
-    base_delay = amt * 0.5;
-};
+//================================ Constants ===================================
+//==============================================================================
 
 MAX_DELAY = 4096;
 
-//=============================================================================
-// Twin Oscillator (Time-Varying Comb Filter)
-//=============================================================================
-// Sawtooth through feedforward comb filter: y = x - g*x[n-d]
+//=============================== Utilities ====================================
+//==============================================================================
+
+//------------------------`(dfl).fdelay4`---------------------------------------
+// 4-point Lagrange interpolation fractional delay.
+//
+// #### Usage
+//
+// ```
+// _ : dfl.fdelay4(maxdelay, delay) : _
+// ```
+//
+// Where:
+//
+// * `maxdelay`: maximum delay in samples (compile-time constant)
+// * `delay`: current delay in samples
+//------------------------------------------------------------------------------
+fdelay4(maxdelay, d, x) = de.fdelaylti(4, maxdelay, d, x);
+
+//------------------------`(dfl).sel3`------------------------------------------
+// Three-way selector.
+//
+// #### Usage
+//
+// ```
+// dfl.sel3(s, a, b, c) : _
+// ```
+//
+// Where:
+//
+// * `s`: selector (0, 1, or 2)
+// * `a`: output when s <= 0
+// * `b`: output when 0 < s <= 1
+// * `c`: output when s > 1
+//------------------------------------------------------------------------------
+sel3(s, a, b, c) = select2(s > 0, a, select2(s > 1, b, c));
+
+//============================= Twin Oscillator ================================
+//==============================================================================
+
+//------------------------`(dfl).osc`-------------------------------------------
+// Twin oscillator using time-varying comb filter.
+// Sawtooth through feedforward comb filter: `y = x - g*x[n-d]`
 //
 // Modes (comb filter configurations):
-//   0 = PWM:    y = x - x[d]     Feedforward comb → pulse width modulation
-//   1 = MORPH:  y = x - g*x[d]   Scaled comb → saw to square morphing
-//   2 = DETUNE: y = x + x[d]     Summing comb (note: handled separately in DSP)
 //
-// Parameters:
-//   f      - frequency in Hz
-//   amt    - effect amount (0-1), controls comb delay time
-//   detune - additional delay offset in samples
-//   m      - mode selector (0, 1, or 2)
-
+// * 0 = PWM: `y = x - x[d]` - pulse width modulation
+// * 1 = MORPH: `y = x - amt*x[d]` - saw to square morphing
+// * 2 = DETUNE: `y = x + x[d]` - summing comb
+//
+// #### Usage
+//
+// ```
+// dfl.osc(freq, amt, detune, mode) : _
+// ```
+//
+// Where:
+//
+// * `freq`: frequency in Hz
+// * `amt`: effect amount (0-1), controls comb delay time
+// * `detune`: additional delay offset in samples
+// * `mode`: mode selector (0=PWM, 1=MORPH, 2=DETUNE)
+//------------------------------------------------------------------------------
 osc(f, amt, detune, m) = output
 with {
     osc_out = os.sawtooth(f);
@@ -69,4 +105,13 @@ with {
     detune_out = osc_out + delayed;
 
     output = sel3(m, pwm_out, morph_out, detune_out);
+};
+
+//------------------------`calc_delay`------------------------------------------
+// Internal: converts PWM amount (0-1) to delay in samples.
+// amt=0.5 gives half-period delay (square wave in PWM mode).
+//------------------------------------------------------------------------------
+calc_delay(f, amt, detune) = base_delay * ma.SR / f + detune
+with {
+    base_delay = amt * 0.5;
 };
