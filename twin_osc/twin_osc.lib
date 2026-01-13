@@ -17,11 +17,11 @@ declare reference "https://www.researchgate.net/publication/325654284";
 import("stdfaust.lib");
 
 //=============================================================================
-// Hermite Interpolation Delay
+// Interpolated Fractional Delay
 //=============================================================================
-// 4-point 3rd-order Lagrange interpolation for smooth fractional delay
+// 4-point Lagrange interpolation for smooth fractional delay
 
-hermite_delay(maxdelay, d, x) = de.fdelaylti(4, maxdelay, d, x);
+fdelay4(maxdelay, d, x) = de.fdelaylti(4, maxdelay, d, x);
 
 //=============================================================================
 // Helpers
@@ -62,7 +62,7 @@ osc(f, amt, detune, m) = output
 with {
     osc_out = os.sawtooth(f);
     delay_samples = max(0.01, calc_delay(f, amt, detune));
-    delayed = hermite_delay(MAX_DELAY, delay_samples, osc_out);
+    delayed = fdelay4(MAX_DELAY, delay_samples, osc_out);
 
     pwm_out = osc_out - delayed;
     morph_out = osc_out - amt * delayed;

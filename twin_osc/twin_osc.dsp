@@ -54,7 +54,6 @@ vibrato = hgroup("[2]PWM Vibrato",
 
 // Mode detection
 isPWM = mode < 0.5;
-isDetune = mode > 1.5;
 
 // Vibrato only active in PWM mode
 vibratoActive = select2(isPWM, 0, vibrato);
@@ -78,57 +77,35 @@ lfo = os.lf_triangle(lfoRate);
 mod_amount = amount + lfo * lfoDepth * 0.5 : max(0) : min(1);
 
 //=============================================================================
-// Mode-Dependent Processing
+// Oscillator
 //=============================================================================
 
-// PWM/Morph: delay-based comb filter
+// PWM and Morph use static delay comb filter
 pwm_morph_out = dfl.osc(freq, mod_amount, 0, mode);
 
-// Detune: PITCH SHIFT via continuously modulated delay with crossfade
-// Just intonation mapping: amount 0-1 → ratio 1-2
-// 0 = unison, 0.333 = fourth (4/3), 0.5 = fifth (3/2), 1 = octave (2/1)
-// NO LFO modulation - static pitch interval
-
-MAX_SHIFT_DELAY = 2048;
-
-// Use raw amount (no LFO) for clean static intervals
-ratio = 1 + amount;  // Clean integer ratios at key points
-delay_change_rate = ratio - 1;  // = amount, always >= 0
-
-// Sync grain size to oscillator period for phase-coherent crossfades
-// Grain = N complete oscillator cycles, so crossfade happens at same phase
+// Detune: pitch shift via Doppler effect from continuously ramping delay
+// Delay range spans exactly one oscillator period, so phasor reset is phase-coherent
+MAX_DELAY = 4096;
 period_samples = ma.SR / freq;
-grain_periods = max(1, floor(MAX_SHIFT_DELAY / 2 / period_samples));  // /2 for safety margin
-grain_size = min(MAX_SHIFT_DELAY, grain_periods * period_samples) : si.smoo;
 
-ramp_rate = delay_change_rate / grain_size;
+// Pitch ratio from amount (1.0 to 2.0)
+ratio = 1 + amount;
 
-// Two phasors offset by 0.5 for overlapping grains
-phasor1 = (+(ramp_rate) : ma.frac) ~ _;
-phasor2 = (phasor1 + 0.5) : ma.frac;
+// Phasor rate: determines pitch shift amount
+// For ratio R, phasor runs at freq * (R - 1)
+phasor_freq = freq * (ratio - 1);
+phasor = os.phasor(1, phasor_freq);
 
-// Delay values: grain_size→0 as phasor goes 0→1 (for pitch UP)
-delay1 = max(4, (1 - phasor1) * grain_size);
-delay2 = max(4, (1 - phasor2) * grain_size);
+// Delay sweeps from 2 periods down to 1 period (decreasing = pitch up)
+// When phasor resets, delay jumps by exactly one period (phase-coherent)
+delay_samples = (2 - phasor) * period_samples;
 
-// Source oscillator
 osc_source = os.sawtooth(freq);
-
-// Two pitch-shifted versions
-shifted1 = dfl.hermite_delay(MAX_SHIFT_DELAY, delay1, osc_source);
-shifted2 = dfl.hermite_delay(MAX_SHIFT_DELAY, delay2, osc_source);
-
-// Triangular crossfade windows: peak at phasor=0.5, zero at edges
-window1 = 1 - abs(2 * phasor1 - 1);
-window2 = 1 - abs(2 * phasor2 - 1);
-
-// Crossfade (windows always sum to ~1 when offset by 0.5)
-osc_shifted = (shifted1 * window1 + shifted2 * window2);
-
-// Power-preserving mix: 1/sqrt(2) ≈ 0.707 for two correlated signals
+osc_shifted = dfl.fdelay4(MAX_DELAY, delay_samples, osc_source);
 detune_out = (osc_source + osc_shifted) * 0.707;
 
-// Select based on mode
+// Mode selection
+isDetune = mode > 1.5;
 output = select2(isDetune, pwm_morph_out, detune_out);
 
 //=============================================================================
