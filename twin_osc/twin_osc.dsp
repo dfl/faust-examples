@@ -1,5 +1,5 @@
 // twin_osc.dsp
-// TwinOsc - Virtual Analog Synthesis with Time-Varying Comb Filter
+// TwinOsc - example code
 //
 // Based on: "Virtual Analog Synthesis with a Time-Varying Comb Filter"
 // D. Lowenfels, AES Convention 115, October 2003

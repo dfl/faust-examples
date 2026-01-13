@@ -1,5 +1,5 @@
 //############### twin_osc.lib #################################################
-// TwinOsc Library - Time-Varying Comb Filter Synthesis
+// TwinOsc Library - Time-Varying Comb Filter Tricks
 //
 // Based on: "Virtual Analog Synthesis with a Time-Varying Comb Filter"
 // D. Lowenfels, AES Convention 115, October 2003
