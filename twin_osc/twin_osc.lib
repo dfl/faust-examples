@@ -1,5 +1,5 @@
 //############### twin_osc.lib #################################################
-// TwinOsc Library - Time-Varying Comb Filter Tricks
+// TwinOsc Library - Time-Varying Comb Filter Oscillator and Pitch Shifter
 //
 // Based on: "Virtual Analog Synthesis with a Time-Varying Comb Filter"
 // D. Lowenfels, AES Convention 115, October 2003
@@ -11,7 +11,8 @@
 //
 // ```
 // dfl = library("twin_osc.lib");
-// process = dfl.osc(freq, amt, detune, mode);
+// process = dfl.twin_osc(freq, amt, detune, mode);
+// process = _ : dfl.doppler_shift(freq, ratio) : _;
 // ```
 //
 // #### Reference
@@ -26,35 +27,8 @@ declare version "1.0";
 
 import("stdfaust.lib");
 
-//================================ Constants ===================================
-//==============================================================================
-
-MAX_DELAY = 4096;
-
-//=============================== Utilities ====================================
-//==============================================================================
-
-//------------------------`(dfl).fdelay4`---------------------------------------
-// 4-point Lagrange interpolation fractional delay.
-//
-// #### Usage
-//
-// ```
-// _ : dfl.fdelay4(maxdelay, delay) : _
-// ```
-//
-// Where:
-//
-// * `maxdelay`: maximum delay in samples (compile-time constant)
-// * `delay`: current delay in samples
-//------------------------------------------------------------------------------
-fdelay4(maxdelay, d, x) = de.fdelaylti(4, maxdelay, d, x);
-
-//============================= Twin Oscillator ================================
-//==============================================================================
-
-//------------------------`(dfl).osc`-------------------------------------------
-// Twin oscillator using time-varying comb filter.
+//------------------------------`(dfl.)twin_osc`--------------------------------
+// Twin oscillator using a time-varying comb filter for PWM, morph, or detune.
 // Sawtooth through feedforward comb filter: `y = x - g*x[n-d]`
 //
 // Modes (comb filter configurations):
@@ -66,7 +40,7 @@ fdelay4(maxdelay, d, x) = de.fdelaylti(4, maxdelay, d, x);
 // #### Usage
 //
 // ```
-// dfl.osc(freq, amt, detune, mode) : _
+// twin_osc(freq, amt, detune, mode) : _
 // ```
 //
 // Where:
@@ -75,12 +49,18 @@ fdelay4(maxdelay, d, x) = de.fdelaylti(4, maxdelay, d, x);
 // * `amt`: effect amount (0-1), controls comb delay time
 // * `detune`: additional delay offset in samples
 // * `mode`: mode selector (0=PWM, 1=MORPH, 2=DETUNE)
-//------------------------------------------------------------------------------
-osc(f, amt, detune, m) = output
+//
+// #### References
+//
+// * <https://www.researchgate.net/publication/325654284>
+//----------------------------------------------------------------
+
+twin_osc(f, amt, detune, m) = output
 with {
+    MAX_DELAY = 4096;
     osc_out = os.sawtooth(f);
-    delay_samples = max(0.01, calc_delay(f, amt, detune));
-    delayed = fdelay4(MAX_DELAY, delay_samples, osc_out);
+    delay_samples = max(0.01, amt * 0.5 * ma.SR / f + detune);
+    delayed = de.fdelaylti(4, MAX_DELAY, delay_samples, osc_out);
 
     pwm_out = osc_out - delayed;
     morph_out = osc_out - amt * delayed;
@@ -89,11 +69,33 @@ with {
     output = select3(m, pwm_out, morph_out, detune_out);
 };
 
-//------------------------`calc_delay`------------------------------------------
-// Internal: converts PWM amount (0-1) to delay in samples.
-// amt=0.5 gives half-period delay (square wave in PWM mode).
-//------------------------------------------------------------------------------
-calc_delay(f, amt, detune) = base_delay * ma.SR / f + detune
+//------------------------------`(dfl.)doppler_shift`---------------------------
+// Pitch shifter for signals with known fundamental frequency.
+// Uses Doppler effect from a continuously ramping delay line,
+// with phase-coherent phasor reset synced to the signal period.
+// Best suited for harmonic/periodic signals like oscillator outputs.
+//
+// #### Usage
+//
+// ```
+// _ : doppler_shift(freq, ratio) : _
+// ```
+//
+// Where:
+//
+// * `freq`: fundamental frequency of the input signal (Hz)
+// * `ratio`: pitch ratio (1.0 = no shift, 2.0 = octave up, 0.5 = octave down)
+//
+// #### References
+//
+// * <https://www.researchgate.net/publication/325654284>
+//----------------------------------------------------------------
+
+doppler_shift(freq, ratio, sig) = de.fdelaylti(4, MAX_DELAY, delay_samples, sig)
 with {
-    base_delay = amt * 0.5;
+    MAX_DELAY = 4096;
+    period_samples = ma.SR / freq;
+    phasor_freq = freq * (ratio - 1);
+    phasor = os.phasor(1, phasor_freq);
+    delay_samples = (2 - phasor) * period_samples;
 };

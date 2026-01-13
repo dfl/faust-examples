@@ -7,12 +7,12 @@
 //
 // A sawtooth oscillator fed through a modulated comb filter (delay line)
 // creates classic analog effects:
-//   PWM:    Feedforward comb → pulse width modulation
-//   Morph:  Scaled feedforward → saw to square morphing
-//   Detune: Ramping delay → pitch-shifted intervals (just intonation)
+//   PWM:    Feedforward comb -> pulse width modulation
+//   Morph:  Scaled feedforward -> saw to square morphing
+//   Detune: Ramping delay -> pitch-shifted intervals (just intonation)
 
 declare name "TwinOsc";
-declare author "David Lowenfels <dfl>";
+declare author "David Lowenfels";
 declare version "1.0";
 declare reference "https://www.researchgate.net/publication/325654284";
 
@@ -36,7 +36,7 @@ freq = hgroup("[0]Oscillator",
 // --- Mode + Amount (same row) ---
 // Amount meaning depends on mode:
 //   PWM:    pulse width (0.5 = square)
-//   Morph:  saw→square blend (0 = saw, 1 = square)
+//   Morph:  saw->square blend (0 = saw, 1 = square)
 //   Detune: just intonation ratio (0=unison, 0.33=fourth, 0.5=fifth, 1=octave)
 mode = hgroup("[1]Mode/Amount",
     hslider("[0]Mode[style:menu{'PWM':0;'Morph':1;'Detune':2}][tooltip:PWM=pulse width mod, Morph=saw-square blend, Detune=pitch interval]",
@@ -47,18 +47,12 @@ amount = hgroup("[1]Mode/Amount",
         0.5, 0.0, 1.0, 0.01)) : si.smoo;
 
 // --- PWM Vibrato (only active in PWM mode) ---
-// Single knob: faster rate + thicker depth as you turn up
 vibrato = hgroup("[2]PWM Vibrato",
-    hslider("[0]Vibrato[style:knob][tooltip:PWM pulse width modulation. Only active in PWM mode]",
+    hslider("[0]Vibrato[style:knob][tooltip:PWM pulse width modulation depth/rate]",
         0, 0, 1, 0.01));
 
-// Mode detection
 isPWM = mode < 0.5;
-
-// Vibrato only active in PWM mode
 vibratoActive = select2(isPWM, 0, vibrato);
-
-// PWM: 1-8 Hz rate, 0.3-0.5 depth (both increase together)
 lfoRate = 1 + vibratoActive * 7;
 lfoDepth = vibratoActive * 0.5;
 
@@ -72,36 +66,19 @@ level = hgroup("[3]Output",
 //=============================================================================
 
 lfo = os.lf_triangle(lfoRate);
-
-// LFO modulates amount for PWM (clamped to valid range)
 mod_amount = amount + lfo * lfoDepth * 0.5 : max(0) : min(1);
 
 //=============================================================================
 // Oscillator
 //=============================================================================
 
-// PWM and Morph use static delay comb filter
-pwm_morph_out = dfl.osc(freq, mod_amount, 0, mode);
+// PWM and Morph use the comb filter oscillator
+pwm_morph_out = dfl.twin_osc(freq, mod_amount, 0, mode);
 
-// Detune: pitch shift via Doppler effect from continuously ramping delay
-// Delay range spans exactly one oscillator period, so phasor reset is phase-coherent
-MAX_DELAY = 4096;
-period_samples = ma.SR / freq;
-
-// Pitch ratio from amount (1.0 to 2.0)
-ratio = 1 + amount;
-
-// Phasor rate: determines pitch shift amount
-// For ratio R, phasor runs at freq * (R - 1)
-phasor_freq = freq * (ratio - 1);
-phasor = os.phasor(1, phasor_freq);
-
-// Delay sweeps from 2 periods down to 1 period (decreasing = pitch up)
-// When phasor resets, delay jumps by exactly one period (phase-coherent)
-delay_samples = (2 - phasor) * period_samples;
-
+// Detune: pitch shift via Doppler effect
 osc_source = os.sawtooth(freq);
-osc_shifted = dfl.fdelay4(MAX_DELAY, delay_samples, osc_source);
+ratio = 1 + amount;
+osc_shifted = osc_source : dfl.doppler_shift(freq, ratio);
 detune_out = (osc_source + osc_shifted) * 0.707;
 
 // Mode selection

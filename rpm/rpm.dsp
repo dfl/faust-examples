@@ -5,7 +5,7 @@
 // https://patents.google.com/patent/US4249447
 
 declare name "RPM Oscillator";
-declare author "David Lowenfels <dfl>";
+declare author "David Lowenfels";
 declare version "1.0";
 declare reference "https://patents.google.com/patent/US4249447";
 
@@ -41,8 +41,8 @@ level = hgroup("[2]Output",
 // Oscillators
 //=============================================================================
 
-saw_out = dfl.saw(freq, beta);
-sqr_out = dfl.sqr(freq, beta);
+saw_out = dfl.rpm.saw(freq, beta);
+sqr_out = dfl.rpm.square(freq, beta);
 
 // Crossfade between saw and square
 output = saw_out * (1 - shape) + sqr_out * shape;
