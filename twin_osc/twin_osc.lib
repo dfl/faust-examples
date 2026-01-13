@@ -6,8 +6,8 @@
 // https://www.researchgate.net/publication/325654284
 //
 // Usage:
-//   import("twin_osc.lib");
-//   process = to_twin_osc(freq, amt, detune, mode);
+//   dfl = library("twin_osc.lib");
+//   process = dfl.osc(freq, amt, detune, mode);
 
 declare name "TwinOsc Library";
 declare author "David Lowenfels <dfl>";
@@ -17,23 +17,17 @@ declare reference "https://www.researchgate.net/publication/325654284";
 import("stdfaust.lib");
 
 //=============================================================================
-// Antialiased Sawtooth
-//=============================================================================
-
-to_saw(f) = os.sawtooth(f);
-
-//=============================================================================
 // Hermite Interpolation Delay
 //=============================================================================
 // 4-point 3rd-order Lagrange interpolation for smooth fractional delay
 
-to_hermite_delay(maxdelay, d, x) = de.fdelaylti(4, maxdelay, d, x);
+hermite_delay(maxdelay, d, x) = de.fdelaylti(4, maxdelay, d, x);
 
 //=============================================================================
 // Helpers
 //=============================================================================
 
-to_select3(s, a, b, c) = select2(s > 0, a, select2(s > 1, b, c));
+sel3(s, a, b, c) = select2(s > 0, a, select2(s > 1, b, c));
 
 //=============================================================================
 // Delay Calculation
@@ -41,12 +35,12 @@ to_select3(s, a, b, c) = select2(s > 0, a, select2(s > 1, b, c));
 // Converts PWM amount (0-1) to delay in samples
 // amt=0.5 gives half-period delay (square wave in PWM mode)
 
-to_calc_delay(f, amt, detune) = base_delay * ma.SR / f + detune
+calc_delay(f, amt, detune) = base_delay * ma.SR / f + detune
 with {
     base_delay = amt * 0.5;
 };
 
-to_MAX_DELAY = 4096;
+MAX_DELAY = 4096;
 
 //=============================================================================
 // Twin Oscillator (Time-Varying Comb Filter)
@@ -64,15 +58,15 @@ to_MAX_DELAY = 4096;
 //   detune - additional delay offset in samples
 //   m      - mode selector (0, 1, or 2)
 
-to_twin_osc(f, amt, detune, m) = output
+osc(f, amt, detune, m) = output
 with {
-    osc_out = to_saw(f);
-    delay_samples = max(0.01, to_calc_delay(f, amt, detune));
-    delayed = to_hermite_delay(to_MAX_DELAY, delay_samples, osc_out);
+    osc_out = os.sawtooth(f);
+    delay_samples = max(0.01, calc_delay(f, amt, detune));
+    delayed = hermite_delay(MAX_DELAY, delay_samples, osc_out);
 
     pwm_out = osc_out - delayed;
     morph_out = osc_out - amt * delayed;
     detune_out = osc_out + delayed;
 
-    output = to_select3(m, pwm_out, morph_out, detune_out);
+    output = sel3(m, pwm_out, morph_out, detune_out);
 };

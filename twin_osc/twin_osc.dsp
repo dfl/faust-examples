@@ -22,7 +22,7 @@ declare reference "https://www.researchgate.net/publication/325654284";
 //   faust2vst twin_osc.dsp        # VST plugin
 
 import("stdfaust.lib");
-import("twin_osc.lib");
+dfl = library("twin_osc.lib");
 
 //=============================================================================
 // Controls
@@ -82,7 +82,7 @@ mod_amount = amount + lfo * lfoDepth * 0.5 : max(0) : min(1);
 //=============================================================================
 
 // PWM/Morph: delay-based comb filter
-pwm_morph_out = to_twin_osc(freq, mod_amount, 0, mode);
+pwm_morph_out = dfl.osc(freq, mod_amount, 0, mode);
 
 // Detune: PITCH SHIFT via continuously modulated delay with crossfade
 // Just intonation mapping: amount 0-1 → ratio 1-2
@@ -112,11 +112,11 @@ delay1 = max(4, (1 - phasor1) * grain_size);
 delay2 = max(4, (1 - phasor2) * grain_size);
 
 // Source oscillator
-osc_source = to_saw(freq);
+osc_source = os.sawtooth(freq);
 
 // Two pitch-shifted versions
-shifted1 = to_hermite_delay(MAX_SHIFT_DELAY, delay1, osc_source);
-shifted2 = to_hermite_delay(MAX_SHIFT_DELAY, delay2, osc_source);
+shifted1 = dfl.hermite_delay(MAX_SHIFT_DELAY, delay1, osc_source);
+shifted2 = dfl.hermite_delay(MAX_SHIFT_DELAY, delay2, osc_source);
 
 // Triangular crossfade windows: peak at phasor=0.5, zero at edges
 window1 = 1 - abs(2 * phasor1 - 1);
