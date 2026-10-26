@@ -43,8 +43,8 @@ D = 0.4798 (not 50%!)
 Two-stage decay from coupled capacitors C9 and C34.
 
 **Component values**:
-- C9 = 0.47µF, C34 = 0.47µF
-- R82 = 82kΩ
+- C9 = 0.47µF, C34 = 1µF
+- R82 = 33kΩ
 - R28 = R29 = 100kΩ
 - R122 = 1kΩ
 
@@ -102,10 +102,9 @@ VlowerEdge = α₀·e^(-β₀·Venv^γ₀) + α₁·e^(-β₁·Venv^γ₁) + α�
 4th-order active bandpass filter.
 
 **Component values**:
-- R24 = R25 = R26 = R27 = 10kΩ
-- C28 = C30 = 2.2nF
-- C29 = 3.3nF
-- C31 = 10nF
+- R24 = 2.2kΩ, R25 = 470kΩ, R26 = R27 = 10kΩ
+- C28 = 10nF, C29 = 3.3nF
+- C30 = C31 = 2.2nF
 
 **Transfer function** (Eq. 15):
 ```

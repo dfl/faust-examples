@@ -114,9 +114,9 @@ osc2gain = sqrt(oscBalance);
 // Rising edge detection with startup guard
 trig = gate : ba.impulsify : *(ba.time > 100);
 
-// Werner component values (§5)
-C9   = 0.47e-6;  C34  = 0.47e-6;  // capacitors
-R82  = 82e3;     R122 = 1e3;       // resistors
+// Component values (§5), from the TR-808 service notes' voicing board (also Werner Fig. 1)
+C9   = 0.47e-6;  C34  = 1e-6;     // capacitors
+R82  = 33e3;     R122 = 1e3;       // resistors
 R28  = 100e3;    R29  = 100e3;
 
 Von = 0.075;  // diode drop: 0.6V / 8V scale (Werner Eq. 9)
