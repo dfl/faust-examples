@@ -128,21 +128,36 @@ Hle(s) = (β₂s²) / (α₂s² + α₁s + α₀)
 
 ## Implementation Notes
 
-### What we implemented:
-- ✓ Schmitt oscillators with 48% duty cycle
-- ✓ Two-stage coupled envelope decay
-- ✓ Werner's exact VCA edge curves (Table 1)
-- ✓ 5.3 Hz highpass bias filter
-- ✓ 4th-order bandpass from component values
-- ✓ Accent affects amplitude + decay time
-- ✓ tanh soft clipping for transistor saturation
+### The stock path: Werner's model, in volts
+- Schmitt oscillators at 540 / 800 Hz, 0..5 V, 48% duty, alias-suppressed (`os.pulsetrain`)
+- Trigger: a 1 ms pulse of the accent level, Vct = 7 V (velocity 0) .. 14 V (velocity 1)
+- Envelope: Eqs. 10-12 with the service notes' parts (C9 0.47µF, C34 1µF, R82 33k), forward Euler
+- Swing VCAs on Werner's fitted edges (Table 1); accent changes the decay's shape as well as its height
+- Band pass: Eq. 15 by the bilinear transform; level stage: the two coupling high passes (12 Hz, 330 Hz)
 
-### What we added (not in Werner):
-- Capacitor recovery model for retrigger "choking"
-- Miller effect (dynamic lowpass 10-15kHz)
-- MIDI velocity → accent mapping
-- MIDI pitch → oscillator tuning (maintains ratio)
-- Adjustable drive parameter
+Beyond the paper, where the model needs it:
+- Below the fit's range (0.5 V of envelope) the swing fades out by 0.4 V
+- The collectors only draw current from C9 (D3 / D4)
+- The VCAs' input stage (§6.1: 5.273 Hz, -28.59 dB, 0.4455 V bias) is not needed: the edges model the output
+
+### Measured (one hit at full accent, 44.1 kHz)
+
+| | 540 Hz re 800 Hz | to -20 dB | to -60 dB |
+|---|---|---|---|
+| this model | -15.7 dB | 160 ms | 339 ms |
+| a real 808 (recording) | -15.2 dB | 127 ms | 459 ms |
+| the service notes | | 50 ms to a tenth (peak to peak) | |
+
+### Mods (each at the stock circuit by default)
+- `decay x`: scales R82, R28 and R29
+- `drive`: tanh on the VCAs' outputs (0 = off)
+- `osc balance`: 0.5 both oscillators at full
+- `env detune`: the envelope bends both oscillators up (cents at 8 V)
+- `duty mod`: accent shifts the duty cycle (supply sag)
+- `edge bias`: accent widens the VCAs' swing
+- `keytrack`: MIDI pitch retunes the pair, keeping 800/540
+- `miller lowpass`: a lowpass (15 kHz, down to 10 kHz) darkening loud hits
+- `cap recovery`: quick retriggers come out weaker (400 ms recharge)
 
 ## References
 
